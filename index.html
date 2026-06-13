@@ -259,19 +259,16 @@ textarea#msg-in:focus { border-color: var(--accent); }
         <input type="text" id="r-name" placeholder="e.g. Rikhav" maxlength="30" />
         <label class="lbl">Color</label>
         <div class="color-row" id="color-row"></div>
-        <label class="lbl" style="margin-top:12px;">Room passphrase <span style="color:var(--text3);font-weight:400;">(share with participants)</span></label>
-        <input type="text" id="r-pass" placeholder="e.g. sunflower42" maxlength="40" autocomplete="off" />
+        
         <div class="err" id="r-err"></div>
         <button class="btn" style="margin-top:1rem;" onclick="createRoom()">Create chat</button>
       </div>
       <div id="join-form" style="display:none;">
         <label class="lbl">Room code</label>
         <input type="text" id="j-code" placeholder="Paste code here" autocomplete="off" style="font-family:monospace;letter-spacing:2px;" />
-        <label class="lbl">Room passphrase</label>
-        <input type="password" id="j-pass" placeholder="Passphrase for this room" autocomplete="off" />
         <div class="err" id="j-err"></div>
         <button class="btn" style="margin-top:1rem;" onclick="joinRoom()">Join chat</button>
-        <p class="note">Ask the room creator for the code and passphrase.</p>
+        <p class="note">Ask the room creator for the room code.</p>
       </div>
     </div>
   </div>
@@ -503,32 +500,24 @@ function setType(t){selType=t;document.getElementById('type-dm').classList.toggl
 function switchTab(t){document.getElementById('tab-create').classList.toggle('on',t==='create');document.getElementById('tab-join').classList.toggle('on',t==='join');document.getElementById('create-form').style.display=t==='create'?'':'none';document.getElementById('join-form').style.display=t==='join'?'':'none';}
 
 async function createRoom(){
-  const name=document.getElementById('r-name').value.trim();const pass=document.getElementById('r-pass').value.trim();
+  const name=document.getElementById('r-name').value.trim();
   const err=document.getElementById('r-err');err.style.display='none';
   if(!name){err.textContent='Enter a name.';err.style.display='block';return;}
-  if(!pass){err.textContent='Enter a room passphrase.';err.style.display='block';return;}
-  const passHash=await sha256(pass);
   const roomId=uid().slice(0,8).toUpperCase();
-  // Save room to database so name syncs for everyone
-  await apiPost('rooms',{id:roomId,name,type:selType,color:selColor,pass_hash:passHash});
-  const room={id:roomId,name,type:selType,color:selColor,passHash,code:roomId,lastTs:null,preview:''};
+  await apiPost('rooms',{id:roomId,name,type:selType,color:selColor});
+  const room={id:roomId,name,type:selType,color:selColor,code:roomId,lastTs:null,preview:''};
   rooms.push(room);save('rooms',rooms);closeRoomPanel();renderRoomList();openRoom(room);
 }
 
 async function joinRoom(){
   const code=document.getElementById('j-code').value.trim().toUpperCase();
-  const pass=document.getElementById('j-pass').value.trim();
   const err=document.getElementById('j-err');err.style.display='none';
   if(!code){err.textContent='Enter a room code.';err.style.display='block';return;}
-  if(!pass){err.textContent='Enter the passphrase.';err.style.display='block';return;}
   if(rooms.find(r=>r.code===code)){err.textContent='You already have this chat.';err.style.display='block';return;}
-  // Fetch room details from database
   const res=await apiGet('rooms','id=eq.'+code);
   if(!res||!res[0]){err.textContent='Room not found. Check the code.';err.style.display='block';return;}
-  const passHash=await sha256(pass);
-  if(passHash!==res[0].pass_hash){err.textContent='Wrong passphrase for this room.';err.style.display='block';return;}
   const r=res[0];
-  const room={id:r.id,name:r.name,type:r.type,color:r.color,passHash,code:r.id,lastTs:null,preview:''};
+  const room={id:r.id,name:r.name,type:r.type,color:r.color,code:r.id,lastTs:null,preview:''};
   rooms.push(room);save('rooms',rooms);closeRoomPanel();renderRoomList();openRoom(room);
 }
 
@@ -537,7 +526,7 @@ function openRoomSettings(){
   if(!activeRoom)return;
   document.getElementById('rs-name-display').textContent=activeRoom.name;
   document.getElementById('rs-code').textContent=activeRoom.code;
-  document.getElementById('rs-instructions').innerHTML='Share this room code + the room passphrase with anyone you want to add.<br><br>They open the app → tap + → "Join with code" → paste the code + enter the passphrase.<br><br>Room code: <strong style="font-family:monospace;letter-spacing:2px;">'+activeRoom.code+'</strong>';
+  document.getElementById('rs-instructions').innerHTML='Share this room code with anyone you want to add.<br><br>They open the app → tap + → "Join with code" → paste the code → done.<br><br>Room code: <strong style="font-family:monospace;letter-spacing:2px;">'+activeRoom.code+'</strong>';
   cancelRename();
   document.getElementById('room-settings-panel').classList.add('open');
 }
@@ -580,7 +569,7 @@ function leaveRoom(){
   closeRoomSettings();renderRoomList();
 }
 
-function openRoomPanel(){document.getElementById('r-name').value='';document.getElementById('r-pass').value='';document.getElementById('r-err').style.display='none';document.getElementById('j-code').value='';document.getElementById('j-pass').value='';document.getElementById('j-err').style.display='none';switchTab('create');setType('dm');document.getElementById('room-panel').classList.add('open');}
+function openRoomPanel(){document.getElementById('r-name').value='';document.getElementById('r-err').style.display='none';document.getElementById('j-code').value='';document.getElementById('j-err').style.display='none';switchTab('create');setType('dm');document.getElementById('room-panel').classList.add('open');}
 function closeRoomPanel(){document.getElementById('room-panel').classList.remove('open');}
 function openGlobalSettings(){document.getElementById('global-settings-panel').classList.add('open');}
 function closeGlobalSettings(){document.getElementById('global-settings-panel').classList.remove('open');}
