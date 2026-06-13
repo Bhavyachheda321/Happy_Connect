@@ -340,7 +340,19 @@ textarea#msg-in:focus { border-color: var(--accent); }
     </div>
     <div class="set-body">
       <div class="set-row">
-        <div><div class="set-label">Room name</div><div class="set-sub" id="rs-name">—</div></div>
+      <div class="set-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+          <div><div class="set-label">Room name</div><div class="set-sub" id="rs-name">-</div></div>
+          <button class="set-action" id="rename-btn" onclick="startRename()">Rename</button>
+        </div>
+        <div id="rs-rename-row" style="display:none;width:100%;flex-direction:column;gap:6px;">
+          <input type="text" id="rs-rename-input" placeholder="New name" maxlength="30" />
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <button class="set-action" onclick="saveRename()" style="color:var(--info);border-color:var(--info);">Save</button>
+            <button class="set-action" onclick="cancelRename()">Cancel</button>
+          </div>
+        </div>
+      </div>
       </div>
       <div class="set-row">
         <div><div class="set-label">Room code</div><div class="set-sub">Share this so others can join</div></div>
@@ -787,6 +799,33 @@ function openRoomSettings() {
 }
 function closeRoomSettings(){document.getElementById('room-settings').classList.remove('open');}
 
+function startRename() {
+  const row = document.getElementById("rs-rename-row");
+  const input = document.getElementById("rs-rename-input");
+  row.style.display = "flex";
+  input.value = activeRoom.name;
+  input.focus();
+  document.getElementById("rename-btn").style.display = "none";
+}
+
+function cancelRename() {
+  document.getElementById("rs-rename-row").style.display = "none";
+  document.getElementById("rename-btn").style.display = "";
+}
+
+function saveRename() {
+  const val = document.getElementById("rs-rename-input").value.trim();
+  if (!val) return;
+  activeRoom.name = val;
+  const idx = rooms.findIndex(r => r.id === activeRoom.id);
+  if (idx > -1) { rooms[idx].name = val; save("rooms", rooms); }
+  document.getElementById("rs-name").textContent = val;
+  document.getElementById("ch-title").textContent = val;
+  document.getElementById("their-nm") && (document.getElementById("their-nm").textContent = val);
+  cancelRename();
+  renderRoomList();
+}
+
 function copyRoomCode() {
   navigator.clipboard.writeText(activeRoom.code).then(()=>{
     const btn=document.querySelector('#room-settings .set-action');
@@ -849,4 +888,3 @@ init();
 </script>
 </body>
 </html>
-
