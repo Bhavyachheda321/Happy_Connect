@@ -1067,10 +1067,6 @@ function showNotif(m){
   if(Notification.permission==='granted'&&(document.hidden||!AR||AR.id!==m.room_id)){
     try{new Notification(room?.name||'Private Chat',{body:(m.sender_name||'')+': '+body,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="52">💬</text></svg>',tag:m.room_id,renotify:true});}catch(e){}
   }
-  // OneSignal — set external user ID so server can target this user
-  if(window.OneSignal&&myId){
-    try{await OneSignal.login(myId);}catch(e){}
-  }
 }
 function checkNotif(){
   const btn=document.getElementById('notifbtn'),sub=document.getElementById('notifsub');
