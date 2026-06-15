@@ -629,10 +629,14 @@ function loadApp(){
   document.getElementById('myav').textContent=ini(myName);
   document.getElementById('myname').textContent=myName;
   document.getElementById('gsname').textContent=myName;
-  // Register user with OneSignal so they can receive pushes
-  if(window.OneSignal&&myId){
+  // Register user with OneSignal and tag with user_id for sender filtering
+  if(window.OneSignalDeferred&&myId){
     OneSignalDeferred.push(async function(OneSignal){
-      try{await OneSignal.login(myId);}catch(e){}
+      try{
+        await OneSignal.login(myId);
+        // Tag this device with the user's ID so we can exclude sender from notifications
+        await OneSignal.User.addTag('user_id', myId);
+      }catch(e){console.log('OneSignal init error',e);}
     });
   }
   updatePassUI();
@@ -733,10 +737,8 @@ function tagOneSignalRoom(roomId){
   if(!window.OneSignalDeferred||!myId)return;
   OneSignalDeferred.push(async function(OneSignal){
     try{
-      // Login with user ID so OneSignal knows who this is
       await OneSignal.login(myId);
-      // Tag with room ID so edge function can target by room
-      await OneSignal.User.addTag('room_'+roomId,'1');
+      await OneSignal.User.addTag('user_id', myId);
     }catch(e){console.log('OneSignal tag error',e);}
   });
 }
