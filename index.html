@@ -639,6 +639,17 @@ function loadApp(){
   document.getElementById('hltog').classList.toggle('on',hlPref());
   rooms=ld('rooms',[]);buildColRow();renderRL();
   startPolling();updatePresence();checkNotif();checkIban();
+  // Re-tag all existing rooms on load
+  if(window.OneSignalDeferred&&myId){
+    OneSignalDeferred.push(async function(OneSignal){
+      try{
+        await OneSignal.login(myId);
+        const tags={};
+        rooms.forEach(r=>{tags['room_'+r.id]='1';});
+        if(Object.keys(tags).length)await OneSignal.User.addTags(tags);
+      }catch(e){}
+    });
+  }
 }
 
 // PRESENCE — fix: use dynamic myId in fetch
@@ -714,6 +725,20 @@ async function openRoom(r){
   fetchPresence();
   setTimeout(markRead,800);
   if(window.innerWidth<=640)document.getElementById('sidebar').classList.add('hidden');
+  // Tag user in OneSignal with this room so push notifications work
+  tagOneSignalRoom(r.id);
+}
+
+function tagOneSignalRoom(roomId){
+  if(!window.OneSignalDeferred||!myId)return;
+  OneSignalDeferred.push(async function(OneSignal){
+    try{
+      // Login with user ID so OneSignal knows who this is
+      await OneSignal.login(myId);
+      // Tag with room ID so edge function can target by room
+      await OneSignal.User.addTag('room_'+roomId,'1');
+    }catch(e){console.log('OneSignal tag error',e);}
+  });
 }
 function showSB(){document.getElementById('sidebar').classList.remove('hidden');}
 
